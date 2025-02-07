@@ -1,0 +1,164 @@
+---
+title: "week_7"
+author: "Ehab"
+date: "`r Sys.Date()`"
+output: html_document
+---
+Load libraries 
+```{r}
+library(ggplot2)
+library(dplyr , warning(FALSE))
+library(magrittr)
+library(readr)
+library(caret)
+library(kableExtra)
+library(pROC)
+library(regclass)
+
+```
+
+
+```{r}
+titanic <- read.csv("titanic.csv") %>%
+  mutate(
+    Survived = as.factor(Survived),
+    Pclass  = as.factor(Pclass ),
+    Sex = as.factor(Sex)
+  )
+head(titanic)
+```
+
+
+```{r}
+fit1 <- glm(data = titanic , Survived ~ Pclass, family = "binomial")
+summary(fit1)
+
+```
+
+
+```{r}
+fit2 <- glm(data = titanic , Survived ~ Pclass +Age * Sex, family = "binomial")
+summary(fit2)
+```
+```{r}
+str(titanic)
+```
+
+
+```{r}
+titanic %>% 
+  ggplot(aes(Survived, fill = Survived)) + geom_bar() + labs(x = "survival" , y = "count" , title = "Distribution of the outcome variable") + theme_bw()
+```
+
+
+```{r}
+titanic %>% 
+  count(Survived) %>% 
+  mutate(prop = n / sum(n))
+```
+
+
+```{r}
+ssize_cal <- function(k, p){
+  round((10*k)/p)
+}
+
+ssize_cal(3, 0.38)
+
+```
+
+
+```{r}
+VIF(fit2)
+```
+Like with linear regression we can use the VIF. A VIV > 10 indicates high multicollinearity. Remember that for continuous variables we should inspect the "GVIF" column. For categorical predictors we should check the "GVIF^(1/(2*Df))" column.
+
+```{r}
+titanic$logit <- predict(fit2, type = "link")
+```
+
+
+```{r}
+titanic %>% 
+ggplot(aes(Age, logit))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "glm") + 
+  theme_bw()
+```
+
+
+```{r}
+plot(fit2, which = c(4, 5))
+```
+
+
+```{r}
+dr <- resid(fit2, type = "deviance")
+```
+
+
+```{r}
+eta <- predict(fit2, type = "link")
+```
+
+
+```{r}
+
+dr_data <- data.frame(residuals = dr, 
+                      eta = rep(eta, 3))
+```
+
+
+```{r}
+ggplot(dr_data, aes(x = eta, y = residuals)) + 
+  geom_point(alpha = 0.35) +
+  geom_smooth(se = FALSE) +
+  labs(title = "Deviance residuals") +
+  theme_bw()
+```
+
+
+```{r}
+plot(fit2, which = 1)
+```
+
+
+```{r}
+prob1 <- predict(fit1, type = "response")
+
+prob2 <- predict(fit2, type = "response")
+```
+
+
+```{r}
+pred1 <- ifelse(prob1 > 0.5, 1, 0)
+
+pred2 <- ifelse(prob2 > 0.5, 1, 0)
+```
+
+
+```{r}
+cm1 <- table(pred = pred1, true = titanic$Survived)
+cm2 <- table(pred = pred2, true = titanic$Survived)
+
+cm1
+```
+
+
+```{r}
+cm2
+```
+
+
+```{r}
+table(true = titanic$Survived, pred = pred2)
+```
+
+
+```{r}
+confusionMatrix(as.factor(pred2), 
+                reference = titanic$Survived, 
+                positive = "1")
+```
+
+
