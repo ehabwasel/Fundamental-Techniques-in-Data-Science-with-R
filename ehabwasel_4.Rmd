@@ -1,0 +1,139 @@
+---
+title: "ehabwasel_4"
+author: "Ehab"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Fundamental Techniques in Data Science with R - Practical 4
+packages 
+```{r}
+library(dplyr , warnings(FALSE))
+library(magrittr)
+library(ggplot2)
+library(gridExtra)
+```
+## Loading the dataset
+In the this practical, we will use the built-in data set iris.
+```{r}
+data <- iris
+head(iris)
+```
+## Inspecting the dataset
+A good way of eyeballing on a relation between two continuous variables is by creating a scatterplot.
+
+```{r}
+ggplot(data) +
+  geom_point(aes(Sepal.Length, Petal.Width)) +
+  xlab("Sepal length (in cm)") +
+  ylab("Petal width (in cm)") +
+  labs(col = "Species") +
+  theme_minimal() +
+  ggtitle("Plot of 2 continous variables")  + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+A loess curve can be added to the plot to get a general idea of the relation between the two variables. You can add a loess curve to a ggplot with stat_smooth(method = "loess").
+
+```{r}
+ggplot(data, aes(x = Sepal.Length, y = Petal.Width)) +
+  geom_point() +
+  stat_smooth(method = "loess", se=F, col = "blue") +
+  xlab("Sepal length (in cm)") +
+  ylab("Petal width (in cm)") +
+  labs(col = "Species") +
+  theme_minimal() +
+  ggtitle("Plot of 2 continous variables")  + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+# Change the loess curve of the previous plot to a regression line. Describe the relation that the line indicates.
+
+```{r}
+# In comparison to the previous plot, we now adjust "method = "loess"" to "method = "lm"".
+ggplot(data, aes(x = Sepal.Length, y = Petal.Width)) +
+  geom_point() +
+  stat_smooth(method = "lm", se=F, col = "blue") +
+  xlab("Sepal length (in cm)") +
+  ylab("Petal width (in cm)") +
+  labs(col = "Species") +
+  theme_minimal() +
+  ggtitle("Plot of 2 continous variables")  + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+## imple linear regression
+With the lm() function, you can specify a linear regression model. 
+
+```{r}
+# Specify model: outcome = petal width, predictor = sepal width
+iris_model1 <- lm(Petal.Width ~ Sepal.Width,
+                  data = iris)
+
+summary(iris_model1)
+```
+### Specify a regression model where Sepal length is predicted by Petal width. Store this model as `model1. Supply summary statistics for this model.
+
+```{r}
+# specify model
+model1 <- lm(Sepal.Length ~ Petal.Width, 
+             data = data)
+
+# ask for summary
+summary(model1)
+```
+###  interpretation of the regression coefficient.
+for every centimeter increase in the width of a petal leaf, the predicted length of a sepal leaf increases by 0.89 cm.
+
+# Multiple linear regression
+outcome_variable ~ predictor_1 + predictor_2 + ... + predictor_n.
+
+```{r}
+# Specify additional predictors
+model2 <- lm(Sepal.Length ~ Petal.Width + Petal.Length, 
+             data = data)
+
+# Ask for summary statistics again
+summary(model2)
+
+```
+we can see that adding a predictor can change the coefficients of other predictors as well (it is a new model after all). In this example, it is notable that the coefficient for petal width has become a negative number, while it was positive in model 1.
+
+
+### Categorical predictors
+Add species as a predictor to the model specified as model2, store it under the name model3 and interpret the categorical coefficients of this new model.
+
+```{r}
+model3 <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Species,
+             data = data)
+
+# Ask for summary data
+summary(model3)
+
+```
+## Model comparison
+Now you have created multiple models, you can compare how well these models function (compare the model fit). There are multiple ways of testing the model fit and to compare models, we use the following:
+
+AIC (use the function AIC() on the model object)
+BIC (use the function BIC() on the model object)
+MSE (use MSE() of the MLmetrics package, or calculate by transforming the model$residuals)
+Deviance test (use anova() to compare 2 models)
+
+```{r}
+AICvalues <- rbind(AIC(model1), AIC(model2))
+BICvalues <- rbind(BIC(model1), BIC(model2))
+MSEvalues <- rbind(mean(model1$residuals^2), 
+                    mean(model2$residuals^2))
+
+modelfitvalues <- cbind(AICvalues, BICvalues, MSEvalues)
+rownames(modelfitvalues) <- c("model1", "model2")
+colnames(modelfitvalues) <- c("AIC", "BIC", "MSE")
+modelfitvalues 
+```
+ We see that the second AIC is lower, and thus this model has a better fit-complexity trade-off. The BIC has the same conclusion as the AIC in this case. The MSE of the second model is lower, and therefore indicates less error and a better fit.
+
+```{r}
+anova(model1, model2)
+```
+

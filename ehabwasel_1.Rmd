@@ -1,0 +1,103 @@
+---
+title: "Practical 1: Introduction"
+author: "ehab_wasel"
+date: "`r Sys.Date()`"
+output: html_document
+
+---
+## step 1 : Load the required packages:
+```{r setup, include=FALSE}
+library(dplyr)
+library(readr)
+library(knitr)
+```
+## Step 2: Basic Mathematical Operations
+```{r code_exercises}
+# 1. Create an object 'a' with value 1
+a <- 1 
+
+# 2. Verify that 'a' is stored as 1
+a # Prints the value of 'a'
+
+# 3. Square 'a'
+a_squared <- a^2 
+
+# 4. Assign a + a to 'b' and check if 'b' is equal to a + a
+b <- a + a
+b == a + a # Should return TRUE
+
+# 5. Square 'b'
+b_squared <- b^2 
+
+# 6. Multiply the result of question 5 by a over b
+c <- (b_squared * a) / b 
+
+# 7. Assign the result to 'c'
+c
+
+# 8. Take the square root of 'c' to the power 'b'
+sqrt_c_b <- sqrt(c^b) 
+
+# 9. Multiply the result by a over (b to the power of 6)
+result <- (sqrt_c_b * a) / (b^6)
+
+# 10. Round the result to 3 decimal places
+rounded_result <- round(result, 3)
+rounded_result # Print final result
+```
+## Step 3: Using Built-in Functions
+```{r functions}
+# Create a sequence from 12 to 24
+seq_12_24 <- seq(12, 24)
+seq_12_24 
+
+# Sum the numbers from 28 to 63
+sum_28_63 <- sum(28:63)
+sum_28_63 
+
+# Find the mean of numbers from 25 to 82
+mean_25_82 <- mean(25:82)
+mean_25_82 
+```{r loading_data ,Step 5: Summarizing and Mutating Data}
+
+# Load the flight data
+flight_data <- read_csv("../dataset/flightdata.csv")
+
+# Display the data
+flight_data
+```{r data_summary}
+# Summarize the data
+summary(flight_data)
+```{r mutate_data}
+# Add a new column 'speed'
+flight_data2 <- flight_data %>%
+  mutate(speed = distance / air_time * 60)
+
+# Display the updated dataset
+head(flight_data2)
+```{r select_data}
+# Select specific columns
+flight_data3 <- flight_data2 %>%
+  select(year, month, day, speed)
+
+# Display the new data
+head(flight_data3)
+
+```{r for_loop}
+# Loop to calculate third power divided by 13
+for (i in 1:12) {
+  result <- (i^3) / 13
+  print(result)
+}
+
+```{r apply_statement}
+# Create an 8x8 matrix
+matrix_data <- matrix(1:64, nrow = 8, ncol = 8)
+
+# Calculate variance of each row
+row_variances <- apply(matrix_data, MARGIN = 1, FUN = var)
+row_variances
+```{r save_data}
+write_csv(flight_data3, "ehab_wasel_flight_data3.csv")
+
+

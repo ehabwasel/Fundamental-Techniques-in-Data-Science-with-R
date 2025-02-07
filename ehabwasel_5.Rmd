@@ -1,0 +1,223 @@
+---
+title: "WEEK5"
+author: "Ehab"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Fundamental Techniques in Data Science with R Practical 5
+
+import libraries
+
+```{r}
+library(magrittr)
+library(ggplot2) 
+library(regclass , warnings(FALSE))
+library(MASS) 
+
+```
+# Data set: Loading & Inspection
+The variables in this fish data set are:
+
+Species of the fish
+Weight of the fish in grams
+Vertical, length of the fish in cm
+Diagonal length of the fish in cm
+Cross length of the fish in cm
+Height of the fish in cm
+Diagonal width of the fish in cm
+
+```{r}
+data_fish <- read.csv("fish.csv")
+colnames(data_fish) <- c("species", "weigth", "vertical_length", "diagonal_length", "cross_length", "height", "diagonal_width")
+
+head(data_fish)
+
+```
+#Model assumptions
+We will now discuss and check the various model assumptions of linear regression. If steps can be taken to account for a violated assumption, 
+
+```{r}
+ggplot(data_fish , aes(x = vertical_length ,y=  cross_length)) + geom_point() +geom_smooth(se = FALSE)
+```
+
+
+```{r}
+ggplot(data_fish , aes(x = weigth , y= height)) + geom_point() + geom_smooth()
+```
+### Describe both plots. What differences do you see?
+The first plot shows a case where there is a more or less linear relation (Vertical length of the fish and cross length of the fish). In the second plot, the relation is clearly not linear.
+
+
+
+When a non-linear relation is present, you can either choose another model to use, or transform the predictor before adding it to the model, for example using a log-transformation. Applying a transformation, however, will not always solve the problem, and makes interpretation of the model less intuitive.
+
+### Apply a log-transformation to the weight variable.
+```{r}
+data_fish$weigth_trans <- data_fish$weigth |> log()
+```
+
+
+```{r}
+ggplot(data_fish, aes(x = weigth_trans, y = height)) + 
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE) +
+  ggtitle("linear relation improved") +
+  xlab("Weigth in gram") +
+  ylab("heigth in cm")
+```
+Describe if the transformation improved the linear relation.
+the relation is still not completely linear, but a lot more linear than before the transformation 
+
+```{r}
+model_fish1 <- lm(weigth ~., 
+                  data = data_fish[,1:7])
+
+model_fish1 %>%
+  VIF()
+```
+The VIF values in this first model are extreme in some cases, more specifically for the three variables that all measure some aspect of length, it makes sense that these values can be highly correlated. One way to solve this, is excluding predictors that almost measure the same thing as another variable.
+
+A straightforward solution is to include only one of the variables measuring an aspect of length. More elaborate solutions exist but are not covered in this course.
+
+```{r}
+model_fish2 <- lm(weigth ~ species + diagonal_length + height + diagonal_width, 
+             data = data_fish)
+
+model_fish2 %>%
+  VIF()
+```
+ We chose to go with a model which only includes `diagonal_length`, as this variable had the highest VIF value and therefore is able to best grasp the variance that is also measured by the other two length variables. However which strategy is most appropriate can differ per situation. We see now that the VIF values have returned to 'normal' values (although still a bit high).
+ 
+ #Exogenous predictors
+
+```{r}
+model_fish1 %>%
+  plot(1)
+```
+
+
+```{r}
+data_iris   <- iris
+model_iris1 <- lm(Sepal.Length ~ ., 
+                  data = data_iris)
+```
+
+
+```{r}
+model_iris1 %>%
+  plot(1)
+```
+
+# Normally distributed errors
+```{r}
+model_iris1 %>%
+  plot(2)
+```
+
+
+```{r}
+model_fish3 <- lm(diagonal_width ~ cross_length, 
+                  data = data_fish)
+model_fish3 %>%
+  plot(2)
+```
+## Interpret the two plots. Is the assumption met in both cases?
+ In the two plots above, QQ plots are provided for the 2 models. For the first model, the error terms follow the ideal line pretty well, and the assumption holds. In the second plot, the tails deviate quite a lot from the intended line, and it can be debated that the assumption is violated.
+
+
+
+The assumption is important in smaller samples (n < 30). In bigger samples, violating the assumption is less of a big problem. For prediction intervals however, normality of errors is always wanted.
+
+# Outliers
+
+
+
+```{r}
+model_fish1 %>%
+  rstudent() %>%
+  plot()
+
+```
+```{r}
+model_iris1 %>%
+  rstudent() %>%
+  plot()
+```
+
+
+```{r}
+data_animals   <- Animals
+model_animals1 <- lm(body ~ brain,
+                     data = data_animals)
+```
+
+
+```{r}
+model_animals1 %>%
+  rstudent() %>%
+  plot()
+```
+
+
+```{r}
+model_animals1 %>%
+  hatvalues() %>%
+  plot()
+```
+```{r}
+model_animals1 %>%
+  cooks.distance() %>%
+  plot()
+```
+
+
+```{r}
+plot(dfbetas(model_animals1)[,1],
+     main = "intercept")
+```
+
+
+```{r}
+plot(dfbetas(model_animals1)[,2],
+     main = "slope")
+```
+
+
+```{r}
+data_animals2 <- data_animals[-26,]
+model_animals2 <- lm(body ~ brain, 
+                     data = data_animals2)
+```
+
+
+```{r}
+summary(model_animals1)
+```
+
+
+```{r}
+summary(model_animals2)
+```
+
+
+```{r}
+model_animals2 %>%
+  cooks.distance() %>%
+  plot()
+```
+
+
+```{r}
+plot(dfbetas(model_animals2)[,1],
+     main = "intercept")
+```
+
+
+```{r}
+plot(dfbetas(model_animals2)[,2],
+     main = "slope")
+```
+
+ We see that new influential observations arise. These were earlier overshadowed by observation 26. If you look at these cases, you see these are the cases with very heavy animals. In this case the solution should be to transform the data and take the log of the weights, instead of these values. This means that the assumption of linearity was probably not met for this data set
+
+
